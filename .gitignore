@@ -1,0 +1,9 @@
+*tgz
+**/node_modules/
+lib/
+dist/
+css/
+coverage/
+.gitconfig
+*.temp
+src/temp
