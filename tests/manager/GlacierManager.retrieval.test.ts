@@ -93,7 +93,7 @@ describe('GlacierManager getOrInitiateRetrievalJob tests', () => {
         const result = await manager.getOrInitiateRetrievalJob({
             vaultName: 'test-vault',
             archiveId: 'aaaaaaaaaaaaa',
-            createNewJob: false,
+            useExistingJobFirst: true,
             filename,
             returnCompletedOnly: true
         });
@@ -133,7 +133,7 @@ describe('GlacierManager getOrInitiateRetrievalJob tests', () => {
         const result = await manager.getOrInitiateRetrievalJob({
             vaultName: 'test-vault',
             archiveId: 'aaaaaaaaaaaaa',
-            createNewJob: true,
+            useExistingJobFirst: false,
             filename,
             returnCompletedOnly: true
         });

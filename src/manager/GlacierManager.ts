@@ -92,16 +92,54 @@ export class GlacierManager {
         }
     }
 
+    /*
+    Returns archiveId based on provided filename and archive description.
+    The user is responsible for maintaining not more than one version of the file.
+    If there are no completed inventory jobs, undefined will be returned even though
+    there might exist an archive with such name
+    */
+    public async getArchiveId(params: {
+        vaultName: string;
+        filename: string;
+    }): Promise<string | undefined> {
+        const { vaultName, filename } = params;
+        try {
+            const inventory: TInventory | undefined = await this.getInventory({
+                vaultName
+            });
+
+            if (!inventory)
+                return undefined;
+
+            const { archiveList } = inventory;
+            const searchedArchive = archiveList.map(
+                ({ archiveDescription, archiveId }) => ({
+                    meta: archiveDescription && parseArchiveDescription(archiveDescription),
+                    archiveId
+                })).filter(
+                    ({ meta }) => meta && meta.filename === filename
+                );
+            return searchedArchive && searchedArchive.length > 0 ? searchedArchive[0].archiveId : undefined;
+
+        } catch (err) {
+            logger.error('GlacierManager.getArchiveId', err);
+            throw new IceAxeError(IceAxeErrorCode.AWS_FAILURE, 'Failed to resolve archiveId', err);
+        }
+    }
+
+    /*
+    Returns existing inventory job or starts a new one
+    */
     public async getOrInitiateInventoryJob(params: {
         vaultName: string;
         returnCompletedOnly: boolean;
-        createNewJob: boolean;
+        useExistingJobFirst: boolean;
     }) {
 
-        const { returnCompletedOnly, createNewJob, vaultName } = params;
+        const { returnCompletedOnly, useExistingJobFirst, vaultName } = params;
         try {
 
-            if (!createNewJob) {
+            if (useExistingJobFirst) {
                 const jobListResult: ListJobsOutput = await this.glacier.listJobs(
                     {
                         accountId: this.accountId,
@@ -170,18 +208,35 @@ export class GlacierManager {
         }
     }
 
+    public async deleteArchive(params: {
+        vaultName: string;
+        archiveId: string;
+    }) {
+        const { vaultName, archiveId } = params;
+        try {
+            await this.glacier.deleteArchive({
+                accountId: this.accountId,
+                vaultName,
+                archiveId
+            }).promise();
+        } catch (err) {
+            logger.error('GlacierManager.deleteArchive', err);
+            throw new IceAxeError(IceAxeErrorCode.AWS_FAILURE, 'Failed to delete archive', err);
+        }
+    }
+
     public async getOrInitiateRetrievalJob(params: {
         vaultName: string;
         archiveId: string;
         filename: string;
         returnCompletedOnly: boolean;
-        createNewJob: boolean;
+        useExistingJobFirst: boolean;
     }) {
 
-        const { vaultName, returnCompletedOnly, createNewJob, archiveId, filename } = params;
+        const { vaultName, returnCompletedOnly, useExistingJobFirst, archiveId, filename } = params;
         try {
 
-            if (!createNewJob) {
+            if (useExistingJobFirst) {
                 const jobListResult: ListJobsOutput = await this.glacier.listJobs(
                     {
                         accountId: this.accountId,
@@ -256,10 +311,15 @@ export class GlacierManager {
         }
     }
 
+    /*
+    Returns latest inventory if exists
+    */
     public async getInventory(params: { vaultName: string; }): Promise<TInventory | undefined> {
         try {
             const { vaultName } = params;
-            const inventoryJobs = await this.getOrInitiateInventoryJob({ vaultName, createNewJob: false, returnCompletedOnly: true });
+            const inventoryJobs = await this.getOrInitiateInventoryJob({ vaultName, useExistingJobFirst: true, returnCompletedOnly: true });
+
+            // no completed inventory job
             if (!inventoryJobs) {
                 logger.warn(`GlacierManager.getInventory No completed inventory jobs found for ${vaultName}`);
                 return undefined;
@@ -284,7 +344,7 @@ export class GlacierManager {
 
             if (inventory) {
                 const { ArchiveList, InventoryDate, VaultARN } = inventory as TAWSInventoryReport;
-                logger.debug(`GlacierManager.getInventory archiveList=${ArchiveList}`);
+                logger.debug(`GlacierManager.getInventory archiveList=${JSON.stringify(ArchiveList)}`);
                 return {
                     archiveList: ArchiveList.map(
                         ({ ArchiveDescription, ArchiveId, CreationDate, SHA256TreeHash, Size }) => ({
