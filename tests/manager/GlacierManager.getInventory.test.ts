@@ -27,7 +27,7 @@ afterEach(async (done) => {
     done();
 })
 
-describe('GlacierManager getInventory tests', () => {
+describe('GlacierManager loadInventory tests', () => {
 
     test('Success no existing job', async () => {
 
@@ -50,7 +50,7 @@ describe('GlacierManager getInventory tests', () => {
         });
 
         const manager = new GlacierManager({ accountId: 'test', region: 'test', enableLogging: true }, new AWS.Glacier());
-        const result = await manager.getInventory({
+        const result = await manager.loadInventory({
             vaultName: 'test-vault'
         });
         expect(listCallCounter).toBe(1);
@@ -103,7 +103,7 @@ describe('GlacierManager getInventory tests', () => {
         });
 
         const manager = new GlacierManager({ accountId: 'test', region: 'test', enableLogging: true }, new AWS.Glacier());
-        const result = await manager.getInventory({
+        const result = await manager.loadInventory({
             vaultName
         });
         expect(listCallCounter).toBe(1);
@@ -165,7 +165,7 @@ describe('GlacierManager getInventory tests', () => {
         });
 
         const manager = new GlacierManager({ accountId: 'test', region: 'test', enableLogging: true }, new AWS.Glacier());
-        const result = await manager.getInventory({
+        const result = await manager.loadInventory({
             vaultName
         });
         expect(listCallCounter).toBe(1);

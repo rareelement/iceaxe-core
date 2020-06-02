@@ -43,3 +43,10 @@ export type TInventory = {
         size: number;
     }>;
 };
+
+export type TRetrievalJob = {
+    archiveId: string;
+    completed: boolean;
+    description: string;
+    jobId: string;
+};

@@ -8,7 +8,7 @@ import {
 import { getLogger } from '../logging/Logger';
 import { join } from 'path';
 import { FileUploader } from '../utils/FileUploader';
-import { TMultipartUpload, TAWSInventoryReport, TArchiveMeta, TInventory, TVault } from './model';
+import { TMultipartUpload, TAWSInventoryReport, TArchiveMeta, TInventory, TVault, TRetrievalJob } from './model';
 import { IceAxeError, IceAxeErrorCode } from './errors';
 import { Readable, pipeline } from 'stream';
 import { promisify } from 'util';
@@ -104,7 +104,7 @@ export class GlacierManager {
     }): Promise<string | undefined> {
         const { vaultName, filename } = params;
         try {
-            const inventory: TInventory | undefined = await this.getInventory({
+            const inventory: TInventory | undefined = await this.loadInventory({
                 vaultName
             });
 
@@ -145,6 +145,7 @@ export class GlacierManager {
                         accountId: this.accountId,
                         vaultName
                     }).promise();
+
                 const inventoryJobs = jobListResult.JobList?.filter(
                     ({ Action, VaultARN, Completed }) => Action === 'InventoryRetrieval' && VaultARN?.split('/').pop() === vaultName
                         && (!returnCompletedOnly || Completed)
@@ -154,6 +155,14 @@ export class GlacierManager {
                 if (inventoryJobs && inventoryJobs?.length > 0) {
                     logger.info(`GlacierManager.initiateInventoryJob Found existing inventory job for ${vaultName}`);
                     return inventoryJobs;
+                }
+
+                const allJobs = jobListResult.JobList?.filter(
+                    ({ Action, VaultARN }) => Action === 'InventoryRetrieval' && VaultARN?.split('/').pop() === vaultName);
+
+                if (allJobs && allJobs.length) {
+                    logger.debug(`There are pending inventory jobs ${allJobs}`);
+                    return undefined;
                 }
             }
 
@@ -165,13 +174,14 @@ export class GlacierManager {
                 vaultName,
                 jobParameters
             };
+
             logger.info(`GlacierManager.initiateInventoryJob initiating new inventory job for ${vaultName}`);
             const initiateResult: InitiateJobOutput = await this.glacier.initiateJob(jobInput).promise(); // TODO support marker
+            return undefined;
         } catch (err) {
             logger.error('GlacierManager.initiateInventoryJob', err);
             throw new IceAxeError(IceAxeErrorCode.AWS_FAILURE, 'Failed to initiate inventory job', err);
         }
-        return undefined;
     }
 
     public async getRetrivalJobs(params: {
@@ -229,8 +239,8 @@ export class GlacierManager {
         vaultName: string;
         archiveId: string;
         filename: string;
-        returnCompletedOnly: boolean;
         useExistingJobFirst: boolean;
+        returnCompletedOnly?: boolean;
     }) {
 
         const { vaultName, returnCompletedOnly, useExistingJobFirst, archiveId, filename } = params;
@@ -251,7 +261,16 @@ export class GlacierManager {
 
                 if (archiveRetrievalJobs && archiveRetrievalJobs?.length > 0) {
                     logger.info(`GlacierManager.initiateRetrievalJob Found existing ArchiveRetrieval job for ${filename} in ${vaultName}`);
-                    return archiveRetrievalJobs;
+                    const retrievalJobs: TRetrievalJob[] = archiveRetrievalJobs.map(
+                        ({ ArchiveId, Completed, JobDescription, JobId }) => (
+                            {
+                                archiveId: ArchiveId!,
+                                completed: !!Completed,
+                                description: JobDescription!,
+                                jobId: JobId! // TODO throw exception or ignore if undefined
+                            }
+                        ));
+                    return retrievalJobs;
                 }
             }
 
@@ -269,11 +288,11 @@ export class GlacierManager {
             }).promise(); // TODO support marker
             logger.info(`GlacierManager.initiateRetrievalJob initiating new inventory job for ${vaultName}`);
 
-            return retrivalJob;
+            return retrivalJob.jobId;
         } catch (err) {
             logger.error('GlacierManager.initiateRetrievalJob', err);
+            throw new IceAxeError(IceAxeErrorCode.AWS_FAILURE, 'Failed to initiate retrieval', err);
         }
-        return undefined;
     }
 
     public async downloadArchive(params: {
@@ -312,9 +331,9 @@ export class GlacierManager {
     }
 
     /*
-    Returns latest inventory if exists
+    Returns the latest inventory or starts a new inventory job in case there are no pending or completed jobs for the vault.
     */
-    public async getInventory(params: { vaultName: string; }): Promise<TInventory | undefined> {
+    public async loadInventory(params: { vaultName: string; }): Promise<TInventory | undefined> {
         try {
             const { vaultName } = params;
             const inventoryJobs = await this.getOrInitiateInventoryJob({ vaultName, useExistingJobFirst: true, returnCompletedOnly: true });
