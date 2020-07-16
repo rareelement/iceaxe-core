@@ -1,6 +1,6 @@
 {
   "name": "@rareelements/iceaxe-core",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Unofficial AWS Glacier Client library",
   "license": "MIT",
   "scripts": {
@@ -28,23 +28,23 @@
     "url": "https://github.com/rareelement/iceaxe-core"
   },
   "devDependencies": {
-    "@babel/preset-typescript": "^7.10.1",
+    "@babel/preset-typescript": "^7.10.4",
     "@types/jest": "^25.2.3",
-    "@types/node": "^13.13.5",
+    "@types/node": "^13.13.14",
     "aws-sdk-mock": "^5.1.0",
     "del-cli": "^3.0.1",
     "husky": "^4.2.5",
-    "jest": "^26.0.1",
-    "lint-staged": "^10.2.6",
-    "ts-jest": "^26.0.0",
-    "tslint": "^5.12.1",
+    "jest": "^26.1.0",
+    "lint-staged": "^10.2.11",
+    "ts-jest": "^26.1.2",
+    "tslint": "^5.20.1",
     "tslint-sonarts": "^1.9.0",
-    "typescript": "^3.8.3"
+    "typescript": "^3.9.6"
   },
   "dependencies": {
+    "aws-sdk": "^2.714.0",
     "read-chunk": "^3.2.0",
-    "winston": "^3.2.1",
-    "aws-sdk": "^2.673.0"
+    "winston": "^3.3.3"
   },
   "husky": {
     "hooks": {

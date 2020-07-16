@@ -3,7 +3,6 @@ import AWS from 'aws-sdk';
 import { GlacierManager } from '../../src/manager/GlacierManager';
 import { GetJobOutputOutput, ListJobsOutput, InitiateJobOutput } from 'aws-sdk/clients/glacier';
 import { readFileSync, existsSync, unlinkSync } from 'fs';
-import { Readable } from 'stream';
 import { resolve, join } from 'path';
 import { TEST_FILENAME, vaultOutput } from '../helpers';
 
@@ -90,7 +89,7 @@ describe('GlacierManager getOrInitiateRetrievalJob tests', () => {
         });
 
         const manager = new GlacierManager({ accountId: 'test', region: 'test', enableLogging: true }, new AWS.Glacier());
-        const result = await manager.getOrInitiateRetrievalJob({
+        const result = await manager.getOrInitiateRetrievalJobs({
             vaultName: 'test-vault',
             archiveId: 'aaaaaaaaaaaaa',
             useExistingJobFirst: true,
@@ -130,7 +129,7 @@ describe('GlacierManager getOrInitiateRetrievalJob tests', () => {
         });
 
         const manager = new GlacierManager({ accountId: 'test', region: 'test', enableLogging: true }, new AWS.Glacier());
-        const result = await manager.getOrInitiateRetrievalJob({
+        const result = await manager.getOrInitiateRetrievalJobs({
             vaultName: 'test-vault',
             archiveId: 'aaaaaaaaaaaaa',
             useExistingJobFirst: false,

@@ -34,19 +34,29 @@ export type TAWSInventoryReport = {
     ArchiveList: TAWSArchiveItem[];
 };
 
+export type TArchiveItem = {
+    archiveId: string;
+    archiveDescription?: string;
+    creationDate: string;
+    size: number;
+};
+
 export type TInventory = {
     inventoryDate: string;
-    archiveList: Array<{
-        archiveId: string;
-        archiveDescription?: string;
-        creationDate: string;
-        size: number;
-    }>;
+    archiveList: TArchiveItem[];
 };
 
 export type TRetrievalJob = {
+    jobId: string;
     archiveId: string;
     completed: boolean;
-    description: string;
+    description?: string;
+    completionDate?: string;
+};
+
+export type TInventoryJob = {
     jobId: string;
+    completed: boolean;
+    description?: string;
+    completionDate?: string;
 };
