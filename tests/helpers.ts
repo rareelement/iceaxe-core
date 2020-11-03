@@ -13,3 +13,9 @@ export const vaultOutput = (vaultName: string, archives?: number) => {
     };
     return data;
 };
+
+export const sleep = (ms: number) => {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
+}   

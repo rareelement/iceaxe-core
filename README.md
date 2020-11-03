@@ -58,7 +58,19 @@ Upload file (note, that we rely on user removing any previous upload(s) of the s
         vaultName: 'initech-backups' // target AWS Glacier vault
     };
 
-    await manager.uploadFile(uploadParams);
+    const controller: IOProcessController = await manager.uploadFile(uploadParams);
+    controller.addStatusListener(
+        async (status) => {
+            console.log('Upload completed');
+        }
+    );
+
+    // If you need to abort the upload, you can do it by invoking controller's abort() function:
+    // controller.abort();
+
+    // To get the status use the API below
+    const status = await controller.status();
+
 
 ```
 

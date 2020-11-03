@@ -85,7 +85,7 @@ export class GlacierManager {
                     chunkSize: this.chunkSize,
                 }, this.glacier);
 
-            await fileUploader.upload();
+            return fileUploader.upload();
         } catch (err) {
             logger.error('GlacierManager.uploadFile', err);
             throw new IceAxeError(IceAxeErrorCode.AWS_FAILURE, 'Failed to upload file', err);

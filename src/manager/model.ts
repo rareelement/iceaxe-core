@@ -15,6 +15,17 @@ export type TMultipartUpload = {
     partSizeInBytes: number;
 };
 
+export interface IOProcessStatus {
+    currentOffset: number;
+    completed: boolean;
+}
+
+export interface IOProcessController {
+    abort(): Promise<void>;
+    status(): Promise<IOProcessStatus>;
+    addStatusListener(handler: (status: IOProcessStatus) => Promise<void>): Promise<void>;
+}
+
 export type TArchiveMeta = {
     version: number; // metadata format version
     filename: string; // filename

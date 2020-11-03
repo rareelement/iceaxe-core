@@ -4,7 +4,8 @@ import AWSMock from 'aws-sdk-mock';
 import AWS from 'aws-sdk';
 import { GlacierManager } from '../../src/manager/GlacierManager';
 import { UploadMultipartPartInput, CompleteMultipartUploadInput, ListMultipartUploadsInput, InitiateMultipartUploadInput } from 'aws-sdk/clients/glacier';
-import { TEST_FILENAME } from '../helpers';
+import { TEST_FILENAME, sleep } from '../helpers';
+import { IOProcessController } from '../../src/manager/model';
 
 const root = resolve(__dirname);
 const file = join(root, TEST_FILENAME);
@@ -61,7 +62,11 @@ describe('GlacierManager uploadFile tests', () => {
         });
 
         const manager = new GlacierManager({ accountId: 'test', region: 'test', enableLogging: true, chunkSize: 4 }, new AWS.Glacier());
-        await manager.uploadFile(params);
+        const controller: IOProcessController = await manager.uploadFile(params);
+
+        while (!(await controller.status()).completed) {
+            await sleep(10);
+        }
         // expect(vaults).toStrictEqual([]);
     });
 
@@ -86,26 +91,41 @@ describe('GlacierManager uploadFile tests', () => {
         });
 
         let callCounter: number = 0;
-        AWSMock.mock('Glacier', 'uploadMultipartPart', (params: UploadMultipartPartInput, callback: Function) => {
+        AWSMock.mock('Glacier', 'uploadMultipartPart', async (params: UploadMultipartPartInput, callback: Function) => {
             callCounter++;
+            await sleep(10);
             callback(null, null);
         });
 
         let completeCounter: number = 0;
-        AWSMock.mock('Glacier', 'completeMultipartUpload', (params: CompleteMultipartUploadInput, callback: Function) => {
+        AWSMock.mock('Glacier', 'completeMultipartUpload', async (params: CompleteMultipartUploadInput, callback: Function) => {
             expect(params.checksum).toEqual('04b1765f61ad1d8920dc71889e9bce10aa160ac52b4ca5e9bcae12103cdd51a8');
             callback(null, null);
+            await sleep(10);
             completeCounter++;
         });
 
         const manager = new GlacierManager({ accountId: 'test', region: 'test', enableLogging: true, chunkSize: 4 }, new AWS.Glacier());
-        await manager.uploadFile(params);
+        const controller: IOProcessController = await manager.uploadFile(params);
+        let completed = false;
+        controller.addStatusListener(
+            async (status) => {
+                completed = completed || status.completed;
+            }
+        );
 
+        while (!(await controller.status()).completed) {
+            expect(completed).toBeFalsy();
+            await sleep(10);
+        }
+
+        await sleep(15);
         expect(callCounter).toEqual(Math.ceil(fileSize / 4));
         expect(completeCounter).toEqual(1);
+        expect(completed).toBeTruthy();
     });
 
-    test('Success file upload, defaault chunk size', async () => {
+    test('Success file upload, default chunk size', async () => {
         const params = {
             path: join(root, '../resources/'),
             filename: TEST_FILENAME.split('/').pop()!,
@@ -139,7 +159,11 @@ describe('GlacierManager uploadFile tests', () => {
         });
 
         const manager = new GlacierManager({ accountId: 'test', region: 'test', enableLogging: true }, new AWS.Glacier());
-        await manager.uploadFile(params);
+        const controller: IOProcessController = await manager.uploadFile(params);
+
+        while (!(await controller.status()).completed) {
+            await sleep(10);
+        }
 
         expect(callCounter).toEqual(1);
         expect(completeCounter).toEqual(1);
