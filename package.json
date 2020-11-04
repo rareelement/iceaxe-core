@@ -1,11 +1,11 @@
 {
   "name": "@rareelements/iceaxe-core",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Unofficial AWS Glacier Client library",
   "license": "MIT",
   "scripts": {
     "prepack": "tsc --project ./tsconfig.json",
-    "test": "tsc --noEmit && jest",
+    "test": "export AWS_REGION=us-east-1; tsc --noEmit && jest",
     "clean": "del-cli lib dist coverage && jest --clearCache",
     "build": "npm run clean && npm run build:cleanup && tsc --project ./tsconfig.json",
     "build:cleanup": "del-cli \"lib/**/?(*.)test.@(ts|js)\"",

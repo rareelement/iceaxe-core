@@ -18,6 +18,7 @@ export type TMultipartUpload = {
 export interface IOProcessStatus {
     currentOffset: number;
     completed: boolean;
+    aborted: boolean;
 }
 
 export interface IOProcessController {
@@ -60,7 +61,8 @@ export type TInventory = {
 export type TRetrievalJob = {
     jobId: string;
     archiveId: string;
-    completed: boolean;
+    archiveSizeInBytes: number;
+    archiveSHA256TreeHash: string;
     description?: string;
     completionDate?: string;
 };
