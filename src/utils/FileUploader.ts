@@ -62,6 +62,7 @@ export class FileUploader { // disposable
             const slicer = FileSlicer.create({ path: this.filepath, chunkSize: this.destination.chunkSize });
 
             const hashes: string[] = [];
+            const maxPosition = slicer.totalSize;
 
             for (const slice of slicer.chunks()) {
 
@@ -69,7 +70,7 @@ export class FileUploader { // disposable
 
                 if (this.aborted) {
                     logger.warn(`File upload has been aborted uploadId=${uploadId}`);
-                    this.eventEmitter.emit(IOEvent.Status, { currentOffset: position, aborted: true });
+                    this.eventEmitter.emit(IOEvent.Status, { currentOffset: position, maxPosition, aborted: true });
                     return;
                 }
 
@@ -87,7 +88,7 @@ export class FileUploader { // disposable
                         uploadId
                     }).promise();
                 }
-                this.eventEmitter.emit(IOEvent.Status, { currentOffset: position });
+                this.eventEmitter.emit(IOEvent.Status, { currentOffset: position, maxPosition });
             }
 
             const finalHash = reduceChecksumTree(hashes, this.glacier);
@@ -102,7 +103,7 @@ export class FileUploader { // disposable
             }).promise();
             logger.info(`FileUpload.completed ${slicer.totalSize}`);
 
-            this.eventEmitter.emit(IOEvent.Status, { currentOffset: slicer.totalSize, completed: true });
+            this.eventEmitter.emit(IOEvent.Status, { currentOffset: maxPosition, maxPosition, completed: true });
 
         } catch (err) {
             logger.error('FileUpload.upload', err);

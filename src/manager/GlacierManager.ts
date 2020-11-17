@@ -200,9 +200,9 @@ export class GlacierManager {
         }
     }
 
-    public async getRetrivalJobs(params: {
+    public async getRetrievalJobs(params: {
         vaultName: string;
-        archiveId?: string;
+        archiveId: string;
         filename?: string;
         returnCompletedOnly: boolean;
     }): Promise<TRetrievalJob[] | undefined> {
@@ -237,11 +237,11 @@ export class GlacierManager {
                     )
                 );
             }
-            logger.info(`GlacierManager.getRetrivalJob initiating new inventory job for ${vaultName}`);
+            logger.info(`GlacierManager.getRetrievalJobs no retrieval jobs for  ${vaultName} and ${params.filename || params.archiveId}`);
 
             return undefined;
         } catch (err) {
-            logger.error('GlacierManager.getRetrivalJob', err);
+            logger.error('GlacierManager.getRetrievalJobs', err);
             throw new IceAxeError(IceAxeErrorCode.AWS_FAILURE, 'Failed to fetch retrival jobs', err);
         }
     }
@@ -317,7 +317,7 @@ export class GlacierManager {
                     Tier: tier || TRetrievalTier.Bulk
                 }
             }).promise(); // TODO support marker
-            logger.info(`GlacierManager.initiateRetrievalJob initiating new inventory job for ${vaultName}`);
+            logger.info(`GlacierManager.initiateRetrievalJob initiating new inventory job for ${vaultName} and ${archiveId}`);
 
             return retrivalJob.jobId;
         } catch (err) {

@@ -49,12 +49,24 @@ describe('GlacierManager download tests', () => {
             archiveSize: Buffer.from(text, 'utf8').length
         });
 
+        let offset: number = 0;
+        let maxPosition: number | undefined = 0;
+        controller.addStatusListener(
+            async (status) => {
+                offset = status.currentOffset;
+                maxPosition = status.maxPosition;
+            }
+        );
+
         while (!(await controller.status()).completed) {
+            expect(maxPosition).toBeLessThanOrEqual(102);
             await sleep(10);
         }
 
         const downloadedContent = readFileSync(outputFile);
         expect(new String(downloadedContent).toString()).toEqual(text);
+        expect(offset).toEqual(103);
+        expect(maxPosition).toEqual(103);
     });
 
 });

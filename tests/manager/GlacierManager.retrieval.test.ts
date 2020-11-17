@@ -27,7 +27,7 @@ afterEach(async (done) => {
     done();
 })
 
-describe('GlacierManager getRetrivalJobs tests', () => {
+describe('GlacierManager getRetrievalJobs tests', () => {
 
     test('Success test with zero retrival jobs', async () => {
         const vaultName = 'test-vault';
@@ -48,8 +48,9 @@ describe('GlacierManager getRetrivalJobs tests', () => {
         });
 
         const manager = new GlacierManager({ accountId: 'test', region: 'test', enableLogging: true }, new AWS.Glacier());
-        const result = await manager.getRetrivalJobs({
+        const result = await manager.getRetrievalJobs({
             vaultName: 'test-vault',
+            archiveId: 'something',
             returnCompletedOnly: true
         });
 

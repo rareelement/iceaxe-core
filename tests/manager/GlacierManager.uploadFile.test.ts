@@ -107,14 +107,22 @@ describe('GlacierManager uploadFile tests', () => {
 
         const manager = new GlacierManager({ accountId: 'test', region: 'test', enableLogging: true, chunkSize: 4 }, new AWS.Glacier());
         const controller: IOProcessController = await manager.uploadFile(params);
+
         let completed = false;
+        let offset: number = 0;
+        let maxPosition: number | undefined = 0;
+
         controller.addStatusListener(
             async (status) => {
+                offset = status.currentOffset;
+                maxPosition = status.maxPosition;
                 completed = completed || status.completed;
             }
         );
 
+
         while (!(await controller.status()).completed) {
+            expect(maxPosition < 50 || maxPosition === 50 && !completed).toBeTruthy();
             expect(completed).toBeFalsy();
             await sleep(10);
         }
@@ -123,6 +131,9 @@ describe('GlacierManager uploadFile tests', () => {
         expect(callCounter).toEqual(Math.ceil(fileSize / 4));
         expect(completeCounter).toEqual(1);
         expect(completed).toBeTruthy();
+
+        expect(offset).toEqual(50);
+        expect(maxPosition).toEqual(50);
     });
 
     test('Success file upload, default chunk size', async () => {

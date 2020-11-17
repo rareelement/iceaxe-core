@@ -17,6 +17,7 @@ export type TMultipartUpload = {
 
 export interface IOProcessStatus {
     currentOffset: number;
+    maxPosition?: number;
     completed: boolean;
     aborted: boolean;
 }

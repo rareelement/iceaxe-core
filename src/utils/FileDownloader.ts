@@ -47,6 +47,8 @@ export class FileDownloader { // disposable
 
         let writableStream: WriteStream | undefined;
         const slicer = DownloadSlicer.create({ totalSize: archiveSize!, chunkSize });
+        const maxPosition = slicer.totalSize;
+
         try {
 
             const pipelinePromise = promisify(pipeline);
@@ -58,7 +60,7 @@ export class FileDownloader { // disposable
 
                 if (this.aborted) {
                     logger.warn(`File download has been aborted jobId=${jobId}`);
-                    this.eventEmitter.emit(IOEvent.Status, { currentOffset: position, aborted: true });
+                    this.eventEmitter.emit(IOEvent.Status, { currentOffset: position, maxPosition, aborted: true });
                     return;
                 }
 
@@ -70,6 +72,7 @@ export class FileDownloader { // disposable
                     jobId,
                     range: 'bytes ' + start + '-' + (end - 1) + '/*'
                 }).promise();
+                logger.debug(`FileDownload.fetched ${JSON.stringify({ start, end, position })}`);
 
                 const { body, acceptRanges } = retrivalJobOutput;
 
@@ -81,10 +84,11 @@ export class FileDownloader { // disposable
                 } else {
                     writableStream.write(body as Readable);
                 }
-                this.eventEmitter.emit(IOEvent.Status, { currentOffset: position });
+                logger.debug(`FileDownload.persisted locally ${JSON.stringify({ start, end, position })}`);
+                this.eventEmitter.emit(IOEvent.Status, { currentOffset: position, maxPosition });
             }
 
-            this.eventEmitter.emit(IOEvent.Status, { currentOffset: slicer.totalSize, completed: true });
+            this.eventEmitter.emit(IOEvent.Status, { currentOffset: maxPosition, maxPosition, completed: true });
 
         } catch (err) {
             logger.error('FileDownloader.downloadArchive', err);
