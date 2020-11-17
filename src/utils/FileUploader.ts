@@ -70,7 +70,7 @@ export class FileUploader { // disposable
 
                 if (this.aborted) {
                     logger.warn(`File upload has been aborted uploadId=${uploadId}`);
-                    this.eventEmitter.emit(IOEvent.Status, { currentOffset: position, maxPosition, aborted: true });
+                    this.eventEmitter.emit(IOEvent.Status, { currentOffset: start, maxPosition, aborted: true });
                     return;
                 }
 
@@ -78,7 +78,8 @@ export class FileUploader { // disposable
 
                 const hash = this.glacier.computeChecksums(chunk);
                 hashes.push(hash.linearHash);
-
+                
+                this.eventEmitter.emit(IOEvent.Status, { currentOffset: start, maxPosition });
                 if (position >= this.startPosition) {
                     await this.glacier.uploadMultipartPart({
                         range: 'bytes ' + start + '-' + (end - 1) + '/*',
@@ -88,7 +89,7 @@ export class FileUploader { // disposable
                         uploadId
                     }).promise();
                 }
-                this.eventEmitter.emit(IOEvent.Status, { currentOffset: position, maxPosition });
+                this.eventEmitter.emit(IOEvent.Status, { currentOffset: end, maxPosition });
             }
 
             const finalHash = reduceChecksumTree(hashes, this.glacier);

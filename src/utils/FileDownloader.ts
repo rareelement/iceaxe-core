@@ -60,7 +60,7 @@ export class FileDownloader { // disposable
 
                 if (this.aborted) {
                     logger.warn(`File download has been aborted jobId=${jobId}`);
-                    this.eventEmitter.emit(IOEvent.Status, { currentOffset: position, maxPosition, aborted: true });
+                    this.eventEmitter.emit(IOEvent.Status, { currentOffset: start, maxPosition, aborted: true });
                     return;
                 }
 
@@ -85,7 +85,7 @@ export class FileDownloader { // disposable
                     writableStream.write(body as Readable);
                 }
                 logger.debug(`FileDownload.persisted locally ${JSON.stringify({ start, end, position })}`);
-                this.eventEmitter.emit(IOEvent.Status, { currentOffset: position, maxPosition });
+                this.eventEmitter.emit(IOEvent.Status, { currentOffset: end, maxPosition });
             }
 
             this.eventEmitter.emit(IOEvent.Status, { currentOffset: maxPosition, maxPosition, completed: true });
