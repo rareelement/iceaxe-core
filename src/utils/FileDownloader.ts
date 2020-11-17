@@ -70,7 +70,7 @@ export class FileDownloader { // disposable
                     accountId,
                     vaultName,
                     jobId,
-                    range: 'bytes ' + start + '-' + (end - 1) + '/*'
+                    range: 'bytes=' + start + '-' + (end - 1)
                 }).promise();
                 logger.debug(`FileDownload.fetched ${JSON.stringify({ start, end, position })}`);
 
