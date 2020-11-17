@@ -20,6 +20,12 @@ const META_VERSION = 1;
 
 const logger = getLogger({ con: { level: 'debug' } });
 
+export enum TRetrievalTier {
+    Expedited = 'Expedited',
+    Standard = 'Standard',
+    Bulk = 'Bulk'
+}
+
 export type TGlacierManagerConfig = {
     region: string;
     accountId: string;
@@ -27,6 +33,7 @@ export type TGlacierManagerConfig = {
     chunkSize?: number;
 };
 
+// TODO load credentials from profile https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/loading-node-credentials-shared.html
 export class GlacierManager {
     private readonly glacier: Glacier;
     private readonly accountId: string;
@@ -260,12 +267,13 @@ export class GlacierManager {
     public async getOrInitiateRetrievalJobs(params: {
         vaultName: string;
         archiveId: string;
-        filename: string;
+        filename?: string;
+        tier?: TRetrievalTier;
         useExistingJobFirst?: boolean;
         returnCompletedOnly?: boolean;
     }): Promise<TRetrievalJob[] | string | undefined> {
 
-        const { vaultName, returnCompletedOnly, useExistingJobFirst, archiveId, filename } = params;
+        const { vaultName, returnCompletedOnly, useExistingJobFirst, archiveId, filename, tier } = params;
         try {
 
             if (useExistingJobFirst) {
@@ -275,14 +283,14 @@ export class GlacierManager {
                         vaultName
                     }).promise();
                 const archiveRetrievalJobs = jobListResult.JobList?.filter(
-                    ({ Action, VaultARN, Completed, JobDescription }) =>
-                        Action === 'ArchiveRetrieval' && VaultARN?.split('/').pop() === vaultName && JobDescription === filename
+                    ({ Action, VaultARN, Completed, ArchiveId }) =>
+                        Action === 'ArchiveRetrieval' && VaultARN?.split('/').pop() === vaultName && ArchiveId === archiveId
                         && (!returnCompletedOnly || Completed)
                 );
                 logger.debug(`initiateRetrievalJob/ArchiveRetrieval ${JSON.stringify(archiveRetrievalJobs)}`);
 
                 if (archiveRetrievalJobs && archiveRetrievalJobs?.length > 0) {
-                    logger.info(`GlacierManager.initiateRetrievalJob Found existing ArchiveRetrieval job for ${filename} in ${vaultName}`);
+                    logger.info(`GlacierManager.initiateRetrievalJob Found existing ArchiveRetrieval job for ${filename || archiveId} in ${vaultName}`);
                     const retrievalJobs: TRetrievalJob[] = archiveRetrievalJobs.map(
                         ({ ArchiveId, Completed, JobDescription, JobId, CompletionDate, ArchiveSizeInBytes, ArchiveSHA256TreeHash }) => (
                             {
@@ -304,11 +312,9 @@ export class GlacierManager {
                 vaultName,
                 jobParameters: {
                     ArchiveId: archiveId,
-                    Description: filename,
+                    Description: filename || archiveId, // optional, for information purpose only
                     Type: 'archive-retrieval',
-                    Tier: 'Bulk', // TODO parametrise
-                    // InventoryRetrievalParameters: {
-                    // }
+                    Tier: tier || TRetrievalTier.Bulk
                 }
             }).promise(); // TODO support marker
             logger.info(`GlacierManager.initiateRetrievalJob initiating new inventory job for ${vaultName}`);

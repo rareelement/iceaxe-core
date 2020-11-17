@@ -64,6 +64,7 @@ describe('GlacierManager getOrInitiateRetrievalJob tests', () => {
     test('Success test with no matching inventory jobs, dont create new one', async () => {
         const vaultName = 'test-vault';
         const vault = vaultOutput(vaultName, undefined);
+        const archiveId = 'aaaaaaaaaaaaa';
 
         let listCallCounter: number = 0
         AWSMock.mock('Glacier', 'listJobs', (params: void, callback: Function) => {
@@ -72,6 +73,7 @@ describe('GlacierManager getOrInitiateRetrievalJob tests', () => {
                     Action: 'ArchiveRetrieval',
                     VaultARN: vault.VaultARN!,
                     JobDescription: filename,
+                    ArchiveId: archiveId,
                     Completed: true
                 }]
             };
@@ -91,7 +93,7 @@ describe('GlacierManager getOrInitiateRetrievalJob tests', () => {
         const manager = new GlacierManager({ accountId: 'test', region: 'test', enableLogging: true }, new AWS.Glacier());
         const result = await manager.getOrInitiateRetrievalJobs({
             vaultName: 'test-vault',
-            archiveId: 'aaaaaaaaaaaaa',
+            archiveId,
             useExistingJobFirst: true,
             filename,
             returnCompletedOnly: true

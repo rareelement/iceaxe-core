@@ -1,6 +1,6 @@
 {
   "name": "@rareelements/iceaxe-core",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Unofficial AWS Glacier Client library",
   "license": "MIT",
   "scripts": {
